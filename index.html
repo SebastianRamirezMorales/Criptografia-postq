@@ -18,9 +18,9 @@
     </style>
     </head>
     <script type="module">
-    import signDilithium from '../Dilithium5/dist/pqc-sign-dilithium5.js';
-    import signFalcon from '../FALCON1024/dist/pqc-sign-falcon-1024.js';
-    import signSphincs from '../SPHINCS+/dist/pqc-sign-sphincs-shake256-256s-robust.js';
+    import signDilithium from './Dilithium5/dist/pqc-sign-dilithium5.js';
+    import signFalcon from './FALCON1024/dist/pqc-sign-falcon-1024.js';
+    import signSphincs from './SPHINCS+/dist/pqc-sign-sphincs-shake256-256s-robust.js';
 
     function base64ToBytes(b64) {
     const bin = atob(b64.trim());
@@ -170,10 +170,10 @@
         });
         }
 
-        import signDilithium from '../Dilithium5/dist/pqc-sign-dilithium5.js';
-        import signFalcon from '../FALCON1024/dist/pqc-sign-falcon-1024.js';
-        import signSphincs from '../SPHINCS+/dist/pqc-sign-sphincs-shake256-256s-robust.js';
-        import kemKyber from '../Kyber1024/dist/pqc-kem-kyber1024.js';
+        import signDilithium from './Dilithium5/dist/pqc-sign-dilithium5.js';
+        import signFalcon from './FALCON1024/dist/pqc-sign-falcon-1024.js';
+        import signSphincs from './SPHINCS+/dist/pqc-sign-sphincs-shake256-256s-robust.js';
+        import kemKyber from './Kyber1024/dist/pqc-kem-kyber1024.js';
 
         function bytesToBase64(bytes) {
         let b = '';
@@ -245,7 +245,7 @@
         </fieldset>
 
         <script type="module">
-        import kemKyber from '../Kyber1024/dist/pqc-kem-kyber1024.js';
+        import kemKyber from './Kyber1024/dist/pqc-kem-kyber1024.js';
         function bytesToBase64(bytes) { let b=''; bytes.forEach(x=>b+=String.fromCharCode(x)); return btoa(b); }
         function base64ToBytes(b64) { const bin=atob(b64.trim()); const out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }
         let iv_gcm_last = null, ct_aes_last = null; // Guardar temporalmente último cifrado
@@ -345,7 +345,7 @@
             <div id="kyberAppResult"></div>
             </fieldset>
             <script type="module">
-            import kemKyber from '../Kyber1024/dist/pqc-kem-kyber1024.js';
+            import kemKyber from './Kyber1024/dist/pqc-kem-kyber1024.js';
             function bytesToBase64(bytes) {
             let b = ''; bytes.forEach(x => b += String.fromCharCode(x)); return btoa(b);
             }
