@@ -1,0 +1,461 @@
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+    <link rel="stylesheet" href="css/main.css">
+    <meta charset="utf-8">
+    <title>Plataforma Post-Cuántica</title>
+    <style>
+    body { font-family: Arial, sans-serif; margin: 32px; background: #fbfdfe; }
+    .nav-tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 18px; }
+    .nav-tabs button { flex: 1; padding: 12px 16px; border: none; border-bottom: 2px solid transparent; background: none; font-size: 16px; cursor: pointer; transition: 0.2s; color: #111; }
+    .nav-tabs button.active { border-bottom-color: #3b8ed7; font-weight: bold; background: #f2f8fe; }
+    .tab-content { display: none; padding: 2em 1em 1em 1em; background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .tab-content.active { display: block; }
+    hr { border: none; border-bottom: 1px solid #e0e0e0; margin: 24px 0 12px 0; }
+    label, legend { font-weight: bold; }
+    textarea { width: 100%; background: #f8fafb; font-family: monospace; margin: 4px 0 8px 0; }
+    .button { margin: 4px; }
+    </style>
+    </head>
+    <script type="module">
+    import signDilithium from '../Dilithium5/dist/pqc-sign-dilithium5.js';
+    import signFalcon from '../FALCON1024/dist/pqc-sign-falcon-1024.js';
+    import signSphincs from '../SPHINCS+/dist/pqc-sign-sphincs-shake256-256s-robust.js';
+
+    function base64ToBytes(b64) {
+    const bin = atob(b64.trim());
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+    }
+    function bytesToBase64(bytes) {
+    let b = '';
+    bytes.forEach(x => b += String.fromCharCode(x));
+    return btoa(b);
+    }
+
+    function getSignInstance(alg = 'dilithium') {
+    if (alg === 'dilithium') return signDilithium();
+    if (alg === 'falcon') return signFalcon();
+    if (alg === 'sphincs') return signSphincs();
+    throw new Error('Algoritmo no soportado');
+    }
+
+    const btnFirmar = document.querySelector('button[onclick="firmarManual()"]');
+    const btnVerificar = document.querySelector('button[onclick="verificarManual()"]');
+
+    window.firmarManual = async () => {
+    const alg = document.getElementById('keyAlg')?.value || 'dilithium';
+    const hashB64 = document.getElementById('firmaHash').value.trim();
+    const skB64 = document.getElementById('firmaSK').value.trim();
+    if (!hashB64 || !skB64) {
+        alert('Por favor, ingresa hash y clave privada para firmar');
+        return;
+    }
+    try {
+        const sign = await getSignInstance(alg);
+        const hashBytes = base64ToBytes(hashB64);
+        const skBytes = base64ToBytes(skB64);
+        const { signature } = await sign.sign(hashBytes, skBytes);
+        document.getElementById('firmaResultado').value = bytesToBase64(signature);
+    } catch (err) {
+        alert('Error al firmar: ' + err.message);
+    }
+    };
+
+    window.verificarManual = async () => {
+    const alg = document.getElementById('keyAlg')?.value || 'dilithium';
+    const hashB64 = document.getElementById('firmaHashVerif').value.trim();
+    const pkB64 = document.getElementById('firmaPKVerif').value.trim();
+    const sigB64 = document.getElementById('firmaVerif').value.trim();
+    if (!hashB64 || !pkB64 || !sigB64) {
+        alert('Por favor, ingresa hash, firma y clave pública para verificar');
+        return;
+    }
+    try {
+        const sign = await getSignInstance(alg);
+        const hashBytes = base64ToBytes(hashB64);
+        const pkBytes = base64ToBytes(pkB64);
+        const sigBytes = base64ToBytes(sigB64);
+        const valid = await sign.verify(sigBytes, hashBytes, pkBytes);
+        document.getElementById('firmaVerifRes').textContent = valid ? 'Firma legítima ✔' : 'Firma NO válida ✘';
+    } catch (err) {
+        alert('Error en verificación: ' + err.message);
+    }
+    };
+    </script>
+
+    <body>
+    <h1>ALGORITMOS POST-CUÁNTICOS</h1>
+    <nav class="nav-tabs">
+
+        
+    <button class="active" onclick="showTab(0)">Generar hash</button>
+    <button onclick="showTab(1)">Generar llaves</button>
+    <button onclick="showTab(2)">Cifrar texto</button>
+    <button onclick="showTab(3)">Aplicaciones</button>
+    </nav>
+    <div id="tab0" class="tab-content active">
+    <fieldset><legend>Generar hash SHA-256</legend>
+    <label>Mensaje:</label>
+    <textarea id="hashMsg" rows="3">Ejemplo de mensaje para el hash</textarea>
+    <button id="btnGenHash">Calcular hash</button>
+    <p><strong>Hash (SHA-256, base64):</strong> <button type="button" id="btnCopyHash">📋 Copiar</button></p>
+    <textarea id="hashResult" rows="2" readonly></textarea>
+    </fieldset>
+
+    <script>
+    function bytesToBase64(bytes) {
+    let b = '';
+    bytes.forEach(x => b += String.fromCharCode(x));
+    return btoa(b);
+    }
+    const btnGenHash = document.getElementById('btnGenHash');
+    const hashMsg = document.getElementById('hashMsg');
+    const hashResult = document.getElementById('hashResult');
+    const btnCopyHash = document.getElementById('btnCopyHash');
+    btnGenHash.onclick = async () => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(hashMsg.value);
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+    hashResult.value = bytesToBase64(digest);
+    };
+    btnCopyHash.onclick = async () => {
+    try {
+        await navigator.clipboard.writeText(hashResult.value);
+        btnCopyHash.textContent = '✓ Copiado';
+        setTimeout(() => btnCopyHash.textContent = '📋 Copiar', 1500);
+    } catch (err) {
+        alert('No se pudo copiar: ' + err);
+    }
+    };
+    </script>
+
+    </div>
+
+
+    <div id="tab1" class="tab-content">
+    <fieldset><legend>Generar llaves</legend>
+    <label>Algoritmo de firma/cifrado:</label>
+    <select id="keyAlg">
+        <option value="kyber">Kyber1024</option>
+        <option value="dilithium">Dilithium5</option>
+        <option value="falcon">FALCON-1024</option>
+        <option value="sphincs">SPHINCS+</option>
+        
+    </select>
+    <button id="btnGenKeys">Generar llaves</button>
+
+    <p>Clave pública (base64): <button type="button" data-copy-target="pkResult">📋 Copiar</button></p>
+    <textarea id="pkResult" rows="2" readonly></textarea>
+
+    <p>Clave privada (base64): <button type="button" data-copy-target="skResult">📋 Copiar</button></p>
+    <textarea id="skResult" rows="2" readonly></textarea>
+
+    <div id="keyGenResult"></div>
+        </fieldset>
+        <script type="module">
+        // Función copia al portapapeles
+        function setupCopyButtons() {
+        document.querySelectorAll('button[data-copy-target]').forEach(btn => {
+            btn.onclick = () => {
+            const targetId = btn.getAttribute('data-copy-target');
+            const textarea = document.getElementById(targetId);
+            if (!textarea) return;
+            textarea.select();
+            document.execCommand('copy');
+            btn.textContent = '✓ Copiado';
+            setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+            };
+        });
+        }
+
+        import signDilithium from '../Dilithium5/dist/pqc-sign-dilithium5.js';
+        import signFalcon from '../FALCON1024/dist/pqc-sign-falcon-1024.js';
+        import signSphincs from '../SPHINCS+/dist/pqc-sign-sphincs-shake256-256s-robust.js';
+        import kemKyber from '../Kyber1024/dist/pqc-kem-kyber1024.js';
+
+        function bytesToBase64(bytes) {
+        let b = '';
+        bytes.forEach(x => b += String.fromCharCode(x));
+        return btoa(b);
+        }
+
+        const btnGenKeys = document.getElementById('btnGenKeys');
+        const pkResult = document.getElementById('pkResult');
+        const skResult = document.getElementById('skResult');
+        const keyGenResult = document.getElementById('keyGenResult');
+        const keyAlg = document.getElementById('keyAlg');
+
+        btnGenKeys.addEventListener('click', async () => {
+        keyGenResult.textContent = 'Generando llaves...';
+        try {
+            let publicKey, privateKey;
+
+            if (keyAlg.value === 'dilithium') {
+            const inst = await signDilithium();
+            ({ publicKey, privateKey } = await inst.keypair());
+            } else if (keyAlg.value === 'falcon') {
+            const inst = await signFalcon();
+            ({ publicKey, privateKey } = await inst.keypair());
+            } else if (keyAlg.value === 'sphincs') {
+            const inst = await signSphincs();
+            ({ publicKey, privateKey } = await inst.keypair());
+            } else if (keyAlg.value === 'kyber') {
+            const inst = await kemKyber();
+            ({ publicKey, privateKey } = await inst.keypair());
+            } else {
+            throw new Error('Algoritmo no soportado');
+            }
+
+            pkResult.value = bytesToBase64(publicKey);
+            skResult.value = bytesToBase64(privateKey);
+            keyGenResult.textContent = `Llaves generadas para: ${keyAlg.value}. PK bytes: ${publicKey.length}, SK bytes: ${privateKey.length}`;
+        } catch (e) {
+            keyGenResult.textContent = 'Error generando llaves: ' + e;
+            pkResult.value = '';
+            skResult.value = '';
+        }
+        });
+
+        setupCopyButtons();
+        </script>
+
+    </div>
+    <div id="tab2" class="tab-content">
+        <fieldset><legend>Cifrar y descifrar mensaje: Kyber + AES-GCM (ajustada)</legend>
+        <label><strong>Mensaje a cifrar:</strong></label>
+        <textarea id="msgToEncrypt" rows="3"></textarea>
+        <label><strong>Clave pública Kyber (base64):</strong></label>
+        <textarea id="pkKyber" rows="2"></textarea>
+        <button id="btnEncapsulateKyber">Encapsular y cifrar mensaje</button>
+        <p><strong>Ciphertext Kyber (base64):</strong></p>
+        <textarea id="ctKyber" rows="2" readonly></textarea>
+        <p><strong>IV AES-GCM (base64):</strong></p>
+        <textarea id="ivAesB64" rows="1" readonly></textarea>
+        <p><strong>Mensaje cifrado AES-GCM (base64):</strong></p>
+        <textarea id="ctAesB64" rows="2" readonly></textarea>
+        <hr>
+        <label><strong>Ciphertext Kyber (pegar aquí):</strong></label>
+        <textarea id="ctKyberDesc" rows="2"></textarea>
+        <label><strong>Clave privada Kyber (base64):</strong></label>
+        <textarea id="skKyberDesc" rows="2"></textarea>
+        <button id="btnDecapsulateKyber">Descifrar mensaje</button>
+        <div id="kyberResult"></div>
+        </fieldset>
+
+        <script type="module">
+        import kemKyber from '../Kyber1024/dist/pqc-kem-kyber1024.js';
+        function bytesToBase64(bytes) { let b=''; bytes.forEach(x=>b+=String.fromCharCode(x)); return btoa(b); }
+        function base64ToBytes(b64) { const bin=atob(b64.trim()); const out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }
+        let iv_gcm_last = null, ct_aes_last = null; // Guardar temporalmente último cifrado
+        let msg_original_last = null;
+        async function deriveAesKeyFromSharedSecret(sharedSecret) {
+        const keyMaterial = await crypto.subtle.importKey('raw', sharedSecret, { name: 'HKDF' }, false, ['deriveKey']);
+        return await crypto.subtle.deriveKey(
+            { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array([]), info: new TextEncoder().encode('Kyber-AES-GCM') },
+            keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt','decrypt']
+        );
+        }
+        async function encryptAesGcm(plaintext, aesKey) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(plaintext);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, data));
+        return { iv, ciphertext };
+        }
+        async function decryptAesGcm(iv, ciphertext, aesKey) {
+        const plaintextBytes = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, ciphertext));
+        return new TextDecoder().decode(plaintextBytes);
+        }
+        const btnEncapsulateKyber = document.getElementById('btnEncapsulateKyber');
+        const btnDecapsulateKyber = document.getElementById('btnDecapsulateKyber');
+        const msgToEncrypt = document.getElementById('msgToEncrypt');
+        const pkKyber = document.getElementById('pkKyber');
+        const ctKyber = document.getElementById('ctKyber');
+        const ivAesB64 = document.getElementById('ivAesB64');
+        const ctAesB64 = document.getElementById('ctAesB64');
+        const ctKyberDesc = document.getElementById('ctKyberDesc');
+        const skKyberDesc = document.getElementById('skKyberDesc');
+        const kyberResult = document.getElementById('kyberResult');
+        // Encapsula y cifra mensaje
+        btnEncapsulateKyber.onclick = async () => {
+        kyberResult.textContent=''; ctKyber.value=''; ivAesB64.value=''; ctAesB64.value='';
+        msg_original_last = msgToEncrypt.value;
+        try {
+            const kyber = await kemKyber();
+            const publicKey = base64ToBytes(pkKyber.value);
+            const { ciphertext: kemCt, sharedSecret } = await kyber.encapsulate(publicKey);
+            ctKyber.value = bytesToBase64(kemCt);
+            // Deriva AES-GCM key y cifra el mensaje
+            const aesKey = await deriveAesKeyFromSharedSecret(sharedSecret);
+            const { iv, ciphertext } = await encryptAesGcm(msg_original_last, aesKey);
+            iv_gcm_last = iv; ct_aes_last = ciphertext;
+            ivAesB64.value = bytesToBase64(iv);
+            ctAesB64.value = bytesToBase64(ciphertext);
+            kyberResult.textContent = '¡Listo! Ahora puedes copiar y pegar el Ciphertext Kyber y la clave privada en la sección de abajo para descifrar.';
+        } catch(e) {
+            kyberResult.textContent = 'Error al encapsular/cifrar: '+e;
+        }
+        };
+        // Descifra usando los datos RECORDADOS del último cifrado
+        btnDecapsulateKyber.onclick = async () => {
+        kyberResult.textContent = '';
+        try {
+            if (!iv_gcm_last || !ct_aes_last) {
+            kyberResult.textContent = 'No hay datos de cifrado disponibles. Encapsula/cifra primero.';
+            return;
+            }
+            const kyber = await kemKyber();
+            const kemCt = base64ToBytes(ctKyberDesc.value);
+            const privateKey = base64ToBytes(skKyberDesc.value);
+            const { sharedSecret } = await kyber.decapsulate(kemCt, privateKey);
+            const aesKey = await deriveAesKeyFromSharedSecret(sharedSecret);
+            const plaintext = await decryptAesGcm(iv_gcm_last, ct_aes_last, aesKey);
+            kyberResult.textContent = 'Mensaje descifrado correctamente:\n' + plaintext;
+        } catch(e) {
+            kyberResult.textContent = 'Error en descifrado: '+e;
+        }
+        };
+        </script>
+
+
+
+    </div>
+    <div id="tab3" class="tab-content">
+    <fieldset><legend>Aplicaciones</legend>
+        <details><summary><b>Encapsular mensaje secreto</b></summary>
+
+            <fieldset><legend>Encapsular mensaje secreto (Kyber KEM estándar)</legend>
+            <label><strong>Clave pública Kyber (base64):</strong></label>
+            <textarea id="pkKyberApp" rows="2"></textarea>
+            <button id="btnKyberKEMEncaps">Encapsular secreto</button>
+            <p><strong>Ciphertext generado (base64):</strong></p>
+            <textarea id="ctKyberApp" rows="2" readonly></textarea>
+            <p><strong>Shared secret generado (base64):</strong></p>
+            <textarea id="ssAKyberApp" rows="1" readonly></textarea>
+            <hr>
+            <label><strong>Ciphertext Kyber (pegar aquí):</strong></label>
+            <textarea id="ctKyberDescApp" rows="2"></textarea>
+            <label><strong>Clave privada Kyber (base64):</strong></label>
+            <textarea id="skKyberDescApp" rows="2"></textarea>
+            <button id="btnKyberKEMDecaps">Desencapsular y recuperar secreto</button>
+            <div><strong>Shared secret recuperado (base64):</strong></div>
+            <textarea id="ssBKyberApp" rows="1" readonly></textarea>
+            <div id="kyberAppResult"></div>
+            </fieldset>
+            <script type="module">
+            import kemKyber from '../Kyber1024/dist/pqc-kem-kyber1024.js';
+            function bytesToBase64(bytes) {
+            let b = ''; bytes.forEach(x => b += String.fromCharCode(x)); return btoa(b);
+            }
+            function base64ToBytes(b64) {
+            const bin = atob(b64.trim());
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+            }
+            const btnKyberKEMEncaps = document.getElementById('btnKyberKEMEncaps');
+            const btnKyberKEMDecaps = document.getElementById('btnKyberKEMDecaps');
+            const pkKyberApp = document.getElementById('pkKyberApp');
+            const ctKyberApp = document.getElementById('ctKyberApp');
+            const ssAKyberApp = document.getElementById('ssAKyberApp');
+            const ctKyberDescApp = document.getElementById('ctKyberDescApp');
+            const skKyberDescApp = document.getElementById('skKyberDescApp');
+            const ssBKyberApp = document.getElementById('ssBKyberApp');
+            const kyberAppResult = document.getElementById('kyberAppResult');
+            btnKyberKEMEncaps.onclick = async () => {
+            kyberAppResult.textContent = '';
+            ctKyberApp.value = '';
+            ssAKyberApp.value = '';
+            try {
+                const kyber = await kemKyber();
+                const publicKey = base64ToBytes(pkKyberApp.value);
+                const {ciphertext, sharedSecret} = await kyber.encapsulate(publicKey);
+                ctKyberApp.value = bytesToBase64(ciphertext);
+                ssAKyberApp.value = bytesToBase64(sharedSecret);
+                kyberAppResult.textContent = 'Ciphertext y shared secret generados. Encapsulación exitosa.';
+            } catch (e) {
+                kyberAppResult.textContent = 'Error al encapsular: ' + e;
+            }
+            };
+            btnKyberKEMDecaps.onclick = async () => {
+            kyberAppResult.textContent = '';
+            ssBKyberApp.value = '';
+            try {
+                const kyber = await kemKyber();
+                const ciphertext = base64ToBytes(ctKyberDescApp.value);
+                const privateKey = base64ToBytes(skKyberDescApp.value);
+                const {sharedSecret} = await kyber.decapsulate(ciphertext, privateKey);
+                ssBKyberApp.value = bytesToBase64(sharedSecret);
+                if (ssAKyberApp.value) {
+                kyberAppResult.textContent = (ssAKyberApp.value.trim() === ssBKyberApp.value.trim())
+                    ? '¡Secreto verificado correctamente!'
+                    : 'Los secretos no coinciden.';
+                } else {
+                kyberAppResult.textContent = 'Desencapsulación hecha. Si quiere comparar, encapsule arriba primero.';
+                }
+            } catch (e) {
+                kyberAppResult.textContent = 'Error al desencapsular: ' + e;
+            }
+            };
+            </script>
+
+        
+
+
+
+        </details>
+        <hr>
+        <details><summary><b>Generar y verificar firma</b></summary>
+        <p>Genera llaves, calcula el hash, pega hash + SK → obtiene firma.<br>Pega hash + PK + firma para verificar autenticidad.</p>
+        <label>Hash:</label><textarea id="firmaHash" rows="2"></textarea>
+        <label>Clave privada:</label><textarea id="firmaSK" rows="2"></textarea>
+        <button onclick="firmarManual()">Firmar hash</button>
+        <p>Firma (base64):</p><textarea id="firmaResultado" rows="2"></textarea>
+        <hr>
+        <label>Verificar firma<br>Hash:</label><textarea id="firmaHashVerif" rows="2"></textarea>
+        <label>Clave pública:</label><textarea id="firmaPKVerif" rows="2"></textarea>
+        <label>Firma:</label><textarea id="firmaVerif" rows="2"></textarea>
+        <button onclick="verificarManual()">Verificar</button>
+        <div id="firmaVerifRes"></div>
+        </details>
+    </fieldset>
+    </div>
+    <script>
+    function showTab(idx){
+    document.querySelectorAll('.nav-tabs button').forEach((btn,i)=>btn.classList.toggle('active',i===idx));
+    document.querySelectorAll('.tab-content').forEach((tab,i)=>tab.classList.toggle('active',i===idx));
+    }
+    function calcHash() {
+    const msg = document.getElementById('hashMsg').value;
+    window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg)).then(arr=>{
+        const b64=btoa(String.fromCharCode(...new Uint8Array(arr)));
+        document.getElementById('hashResult').textContent = 'SHA-256 Base64:\n'+b64;
+        document.getElementById('firmaHash').value = b64; // para pruebas de firma
+        document.getElementById('firmaHashVerif').value = b64; // para pruebas de verificación
+    });
+    }
+
+
+    function genKeys() {
+    const alg=document.getElementById('keyAlg').value;
+    document.getElementById('pkResult').value='';
+    document.getElementById('skResult').value='';
+    document.getElementById('keyGenResult').textContent = 'Llaves generadas para: '+alg+' (implementa lógica real)';
+    }
+    function encapsulateKyber() {
+    document.getElementById('ctKyber').value = 'ciphertext (implementa lógica real)';
+    }
+    function decapsulateKyber() {
+    document.getElementById('kyberResult').textContent = 'Mensaje original (implementa lógica real)';
+    }
+    function firmarManual() {
+    document.getElementById('firmaResultado').value = 'firma (implementa lógica real)';
+    }
+    function verificarManual() {
+    document.getElementById('firmaVerifRes').textContent = 'Legítima: (implementa lógica real)';
+    }
+    </script>
+    </body>
+    </html>

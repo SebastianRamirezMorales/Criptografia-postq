@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test SPHINCS+</title>
+</head>
+<body>
+  <h1>Prueba básica de SPHINCS+ (firma)</h1>
+  <p>Abre la consola del navegador para ver los resultados.</p>
+
+  <script type="module">
+    // Ajusta el nombre del archivo JS según el paquete que descargaste
+    import signBuilder from '../SPHINCS+/dist/pqc-sign-sphincs-shake256-256s-robust.js';
+
+    async function testSphincs() {
+      const sign = await signBuilder();
+
+      const encoder = new TextEncoder();
+      const message = encoder.encode('Mensaje de prueba con SPHINCS+');
+
+      const { publicKey, privateKey } = await sign.keypair();
+      console.log('Llave pública SPHINCS:', publicKey);
+      console.log('Llave privada SPHINCS:', privateKey);
+
+      const { signature } = await sign.sign(message, privateKey);
+      console.log('Firma SPHINCS:', signature);
+
+      const validSignature = await sign.verify(signature, message, publicKey);
+      console.log('¿Firma SPHINCS válida?:', validSignature);
+    }
+
+    testSphincs();
+  </script>
+</body>
+</html>

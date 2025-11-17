@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test Dilithium5</title>
+</head>
+<body>
+  <h1>Prueba básica de Dilithium5 (firma)</h1>
+  <p>Abre la consola del navegador para ver los resultados.</p>
+
+  <script type="module">
+    // 1. Importar el builder desde tu carpeta dist
+    import signBuilder from '../Dilithium5/dist/pqc-sign-dilithium5.js';
+
+    async function testDilithium() {
+      // 2. Crear la instancia de firma
+      const sign = await signBuilder();  // usa WASM por defecto
+
+      // 3. Preparar el mensaje a firmar
+      const encoder = new TextEncoder();
+      const message = encoder.encode('Mensaje de prueba con Dilithium5');
+
+      // 4. Generar par de llaves
+      const { publicKey, privateKey } = await sign.keypair();
+      console.log('Llave pública:', publicKey);
+      console.log('Llave privada:', privateKey);
+
+      // 5. Firmar el mensaje
+      const { signature } = await sign.sign(message, privateKey);
+      console.log('Firma:', signature);
+
+      // 6. Verificar la firma
+      const validSignature = await sign.verify(signature, message, publicKey);
+      console.log('¿Firma válida?:', validSignature);
+    }
+
+    testDilithium();
+  </script>
+</body>
+</html>

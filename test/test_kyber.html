@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test Kyber1024</title>
+</head>
+<body>
+  <h1>Prueba básica de Kyber1024 (KEM)</h1>
+  <p>Abre la consola del navegador para ver los resultados.</p>
+
+  <script type="module">
+    // Ajusta la ruta/nombre del archivo JS si es necesario
+    import kemBuilder from '../Kyber1024/dist/pqc-kem-kyber1024.js';
+
+    async function testKyber() {
+      // 1. Crear instancia KEM
+      const kem = await kemBuilder();  // usa WASM por defecto
+
+      // 2. Generar par de llaves
+      const { publicKey, privateKey } = await kem.keypair();
+      console.log('PK Kyber:', publicKey);
+      console.log('SK Kyber:', privateKey);
+
+      // 3. Encapsular secreto
+      const { ciphertext, sharedSecret: sharedSecretA } = await kem.encapsulate(publicKey);
+      console.log('Ciphertext Kyber:', ciphertext);
+      console.log('Shared secret A:', sharedSecretA);
+
+      // 4. Decapsular secreto
+      const { sharedSecret: sharedSecretB } = await kem.decapsulate(ciphertext, privateKey);
+      console.log('Shared secret B:', sharedSecretB);
+
+      // 5. Comparar secretos
+      const iguales =
+        sharedSecretA.length === sharedSecretB.length &&
+        sharedSecretA.every((v, i) => v === sharedSecretB[i]);
+      console.log('¿Secretos Kyber iguales?:', iguales);
+    }
+
+    testKyber();
+  </script>
+</body>
+</html>
